@@ -14,7 +14,14 @@ workflow {
 	// TODO: Params assignment inside workflow block is a temp solution:
 	//       outdir and subdir need to be combined in new var, re-setting
 	//       params.outdir won't work.
-	params.results_output_dir = params.outdir + '/' + params.subdir
+        params.results_output_dir = params.outdir + '/' + params.subdir
+
+        // Ensure access paths follow custom outdir when running in dev mode
+        if(params.dev) {
+                params.loaddir = params.outdir
+                params.accessdir = params.results_output_dir + '/'
+                params.gens_accessdir = params.results_output_dir + '/plot_data'
+        }
 
 	// TODO: Pass these to processes in meta?
 	params.mode = file(params.csv).countLines() > 2 ? "family" : "single"
@@ -942,7 +949,7 @@ process markdup {
 			--rmdup ${id}_dedup.bam
 
 		# TODO: Build this and other INFO outputs in separate workflow/process.
-		echo "BAM	$id	/access/${params.subdir}/bam/${id}_dedup.bam" > ${group}_bam.INFO
+		echo "BAM	$id	${params.accessdir}/bam/${id}_dedup.bam" > ${group}_bam.INFO
 
 		${markdup_versions(task)}
 		"""
@@ -1305,7 +1312,7 @@ process d4_coverage {
 		"${bam}" \\
 		"${id}_coverage.d4"
 
-	echo "D4	$id	/access/${params.subdir}/cov/${id}_coverage.d4" > ${group}_d4.INFO
+	echo "D4	$id	${params.accessdir}/cov/${id}_coverage.d4" > ${group}_d4.INFO
 
 	${d4_coverage_version(task)}
 	"""
@@ -1783,7 +1790,7 @@ process bamtoyaml {
 
 	script:
 		"""
-		echo "BAM	$id	/access/${params.subdir}/bam/${bam.getName()}" > ${group}_bamstart.INFO
+		echo "BAM	$id	${params.accessdir}/bam/${bam.getName()}" > ${group}_bamstart.INFO
 		"""
 
 	stub:
@@ -2013,7 +2020,7 @@ process fetch_MTseqs {
 		"""
 		sambamba view -f bam $bam M > ${id}_mito.bam
 		samtools index -b ${id}_mito.bam
-		echo "mtBAM	$id	/access/${params.subdir}/bam/${id}_mito.bam" > ${group}_mtbam.INFO
+		echo "mtBAM	$id	${params.accessdir}/bam/${id}_mito.bam" > ${group}_mtbam.INFO
 
 		${fetch_MTseqs_version(task)}
 		"""
